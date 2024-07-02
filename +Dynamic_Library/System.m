@@ -107,6 +107,11 @@ classdef System < handle
             end
 
             function out = dot_A_dot_q(obj)
+            % ======================================================================
+            %> @brief dot_A_dot_q function gives the [N x 1] array that represents the \f$\dot{\left[A\right]}\dot{\vec{q}}\f$ term of the EOM. This function is used for the calculation of the RHS terms.
+            %>
+            %> @param obj System
+            % ======================================================================
                 syms t
                 % A = obj.A;
                 % d_A = diff(A,t);
@@ -126,6 +131,13 @@ classdef System < handle
 
             
             function A_tk_xk = Get_A_tk_xk(obj,tk,xk)
+            % ======================================================================
+            %> @brief The function Get_A_tk_xk calculates the value of the A matrix in a \f$x_k\f$ configuration at time \f$t_k\f$.
+            %>
+            %> @param obj System
+            %> @param tk time \f$t_k\f$
+            %> @param xk configuration \f$x_k\f$
+            % ======================================================================
                 n = length(obj.q_variables);
                 A_tk_xk = [zeros(n,n)];
                 A_System_Cells = obj.A_Matrix_Fun_Handles;
@@ -900,13 +912,15 @@ classdef System < handle
                 end
             end
             function [A,A_uv] = Get_Kinetic_Energy_Quadratic_Matrix(obj,Name)
-                %Get Rigid Body Object
+                %> @brief The function Get_Kinetic_Energy_Quadratic_Matrix gets the \f$ \left[ A \right]\f$ matrix of a rigid body in the system.
+                %> This function uses the Get_Info function of the Rigid_Body class with the A_Matrix option to get the A matrix.
+
+                %> @param Name Name of the rigid body.
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 Rigid_Body_Name = Name;
                 find_match_Rigid_Body = cellfun(cellfind(Rigid_Body_Name),obj.System_Rigid_Bodies(:,1));
                 Rigid_Body_Cell = obj.System_Rigid_Bodies([find(find_match_Rigid_Body,1)],:);
                 Rigid_Body_Object = Rigid_Body_Cell{4};
-                % K = Rigid_Body_Object.Get_Info("Kinetic_Energy");
                 %Get Generalized Coordintes of System
                 q_cell = obj.System_Generalized_Coordinates(2:end,2);
                 n = length(q_cell);
@@ -917,11 +931,14 @@ classdef System < handle
                 A = Rigid_Body_Object.Get_Info("A_Matrix",'q_vect',q);
                 syms t
                 d_q = diff(q,t);
-                % A = obj.Get_Bilineal_Matrix(K,d_q);
                 [A_uv,u,v] = obj.order_reduction(A,q,d_q);
             end
 
             function [d_A,d_A_uv] = Get_d_Kinetic_Energy_Quadratic_Matrix(obj,Name)
+                %> @brief The function Get_d_Kinetic_Energy_Quadratic_Matrix gets the \f$ \dot{\left[ A \right]}\f$ matrix of a rigid body in the system.
+                %> This function uses the Get_Info function of the Rigid_Body class with the d_A_Matrix option to get the A matrix.
+
+                %> @param Name Name of the rigid body.
                 %Get Rigid Body Object
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 Rigid_Body_Name = Name;
@@ -939,11 +956,12 @@ classdef System < handle
                 d_A = Rigid_Body_Object.Get_Info("d_A_Matrix",'q_vect',q);
                 syms t
                 d_q = diff(q,t);
-                % A = obj.Get_Bilineal_Matrix(K,d_q);
                 [d_A_uv,u,v] = obj.order_reduction(d_A,q,d_q);
             end
 
             function [A,A_uv] = Get_System_Kinetic_Energy_Quadratic_Matrix(obj)
+                %> @brief The function Get_System_Kinetic_Energy_Quadratic_Matrix gets the \f$ \left[ A \right]\f$ matrix of the whole system.
+                %> This function uses the Get_Kinetic_Energy_Quadratic_Matrix function and the system rigid body table to merge all the individual matrices.
                 Rigid_Bodies = obj.System_Rigid_Bodies(:,1);
                 n = length(Rigid_Bodies);
                 aux = obj.Get_Kinetic_Energy_Quadratic_Matrix(Rigid_Bodies{2});
@@ -959,6 +977,8 @@ classdef System < handle
             end
 
             function [d_A,d_A_uv] = Get_System_d_Kinetic_Energy_Quadratic_Matrix(obj)
+                %> @brief The function Get_System_Kinetic_Energy_Quadratic_Matrix gets the \f$\dot{\left[ A \right]}\f$ matrix of the whole system.
+                %> This function uses the Get_d_Kinetic_Energy_Quadratic_Matrix function and the system rigid body table to merge all the individual matrices.
                 Rigid_Bodies = obj.System_Rigid_Bodies(:,1);
                 n = length(Rigid_Bodies);
                 aux = obj.Get_d_Kinetic_Energy_Quadratic_Matrix(Rigid_Bodies{2});
@@ -974,14 +994,6 @@ classdef System < handle
             end
         end
         methods(Static,Access = public)
-            function A = Get_Bilineal_Matrix(K, d_q)
-                A = sym(zeros(length(d_q),length(d_q)));
-                for i = 1:length(d_q)
-                    for j = 1:length(d_q)
-                            A(i,j) = diff(diff(K,d_q(i)),d_q(j));
-                    end
-                end
-            end
         end
     %%  ACTION
     % PROPERTIES
@@ -1103,6 +1115,8 @@ classdef System < handle
                 end
             end
             function out = Get_Action_in_G(obj,Name)
+                %> @brief Get_Action_in_G is a function that takes the Name of an Action in the System and gives the analogous Action in the center of mass G of the rigid body.
+                %> @param Name Name of the action.
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 find_match = cellfun(cellfind(Name),obj.System_Actions(:,1));
                 Action_Cell = obj.System_Actions([find(find_match,1)],:);
@@ -1120,6 +1134,9 @@ classdef System < handle
                 out = Action_Vector_in_G;
             end
             function out = Get_Generalized_Action(obj,Name)
+                %> @brief The Get_Generalized_Action function gives the [N x 1] array that represents the contribution of an Action to the EOM. Generally this components are known as generalized forces.
+                %> 
+                %> @param Name Name of the Action
                 %Get Rigid Body Object
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 find_match = cellfun(cellfind(Name),obj.System_Actions(:,1));
@@ -1375,6 +1392,9 @@ classdef System < handle
                 out = Input_Vector_in_G;
             end
             function out = Get_Generalized_Input(obj,Name)
+                %> @brief The Get_Generalized_Input function gives the [N x 1] array that represents the contribution of an Input to the EOM. Generally this components are known as generalized forces.
+                %> 
+                %> @param Name Name of the Input
                 %Get Rigid Body Object
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 find_match = cellfun(cellfind(Name),obj.System_Inputs(:,1));
