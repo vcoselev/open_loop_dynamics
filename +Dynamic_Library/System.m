@@ -1,3 +1,8 @@
+%> @file System.m
+%> @brief System Class description
+% ======================================================================
+%> @brief System Class for the creation of System objects.
+% ======================================================================
 classdef System < handle
     %% SYSTEM
     % PROPERTIES
@@ -12,9 +17,13 @@ classdef System < handle
 
         % PUBLIC
         properties(Access = public)
+            %> String that defines the name of the system.
             System_Name
+            %> [n x 1] symbolic array that contains the generalized coordinates of the system.
             q_variables
+            %> [n x 1] handle of the functions that calculate the virtual displacements components.
             Virtual_Velocity_Components_fun_handles
+            %> [n x n] handle of the functions that calculate the A matrix.
             A_Matrix_Fun_Handles
             u
             v
@@ -113,25 +122,6 @@ classdef System < handle
                 d_q = diff(q,t);
                 %out = simplify(d_A*d_q);
                 out = d_A*d_q;
-            end
-
-            function out = d_K_d_q(obj)
-                A = obj.A;
-                q = sym([]);
-                q_cell = obj.System_Generalized_Coordinates(2:end,2);
-                n = length(q_cell);
-                for i = 1:n
-                    q = [q ; q_cell{i}];
-                end
-                syms t
-                d_q = diff(q,t);
-                out  = sym(zeros(length(d_q),1));
-                for i = 1:n
-                    for j = 1:n
-                        out = out + obj.diff_scalar_vector(A(i,j),q)*d_q(i)*d_q(j);
-                    end
-                end
-                %out = simplify(out,"Seconds",10);
             end
 
             
@@ -283,37 +273,6 @@ classdef System < handle
             end
         end
         methods(Static,Access = public)
-            function out = diff_scalar_vector(scalar, vector)
-                n = length(vector);
-                out = sym(zeros([n 1]));
-                for i = 1:n
-                    out(i) = diff(scalar,vector(i));
-                end
-            end
-            function X = Back_Substitution(U, Y)
-                N = length(Y);
-                X = sym([zeros(size(Y))]);
-                X(N) = Y(N)/U(N,N);
-                for I = N-1:-1:1
-                    S = Y(I);
-                    for J = N:-1:I+1
-                        S = S-U(I,J)*X(J);
-                    end
-                    X(I) = S / U(I,I);
-                end
-            end
-            function Y = Forward_Substitution(L,B)
-                N = length(B);
-                Y = sym([zeros(size(B))]);
-                Y(1) = B(1)/L(1,1);
-                for I = 2:N
-                    S = B(I);
-                    for J = 1:I
-                        S = S-L(I,J)*Y(J);
-                    end
-                    Y(I) = S / L(I,I);
-                end  
-            end
             function [A_uv,u,v] = order_reduction(A,q,d_q)
                 syms t
                 n = length(q);
@@ -374,6 +333,20 @@ classdef System < handle
 
         % PUBLIC
         methods(Access = public)
+            % ======================================================================
+            %> @brief Base introduction in System
+            %>
+            %> This function creates a Base object with the same inputs that the Base Class requires. This base is introduced in the System object.
+            %>
+            %> @param obj: System object
+            %> @param Name
+            %> @param axis_labels(optional): [3x1] symbolic array that contains the labels of the 3 vectors that represents the base. If this parameter is not specified the default axis_labels will be \f$\left[x,y,z\right]^T\f$.
+            %> @param father_base(optional): The parent Base object defines the base from which the constructor will create a new Base object. From this parent base, a new base is generated through a simple rotation. The simple rotation can only be performed in the direction indicated by the right-hand rule for each of the vectors of the parent base. If father_base parameter is not defined, the default parent base is \f$[1,0,0]\f$, \f$[0,1,0]\f$, and \f$[0,0,1]\f$.
+            %> @param axis_rotation(optional): The simple rotation can only be performed in the direction indicated by the right-hand rule for each of the vectors of the parent base. The axis_rotation parameter defines the rotation axis with a string "1", "2" or "3" defining the parent basis vector to use. If axis_rotation parameter is not defined, the default axis of rotation "1".
+            %> @param angle_rotation(optional): Symbolic or double parameter that defines the angle of rotation (in radians) of the new base. If angle_rotation parameter is not defined the default angle of rotation is 0.
+            %>
+            %>
+            % ======================================================================
             function R_Base_1_Base_2 = Create_New_Base(obj, Name, varargin)
                 %CELLFIND Find string matches in a cell array. Used to
                 %avoid having bases with the same name.
@@ -401,6 +374,7 @@ classdef System < handle
                     obj.System_Bases = [obj.System_Bases; {Base.Get_Info("Name"), Base}];
                 end
             end
+
             function out = Get_Base_Info(obj, Info, varargin)
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 default_Base = "All";
@@ -426,6 +400,12 @@ classdef System < handle
                 end              
 
             end
+            % ======================================================================
+            %> @brief Given some vector components in a Base_1 the Change_Basis_Matrix function gives the vector components in base Base_2.
+            %>
+            %> @param Base_1: Base object that represent the fixed frame
+            %> @param Base_2: Base object that represent the moving frame
+            % ======================================================================
             function R_Base_1_Base_2 = Change_Basis_Matrix(obj,Base_1, Base_2)
                 Base_1_Obj = obj.Get_Base_Info("System_Bases",'base',Base_1);
                 Base_2_Obj = obj.Get_Base_Info("System_Bases",'base',Base_2);
@@ -433,6 +413,13 @@ classdef System < handle
                 R_Canonical_Base_2 = Base_2_Obj{2}.Get_Info("Base_Matrix_From_Canonical");
                 R_Base_1_Base_2 = simplify(R_Canonical_Base_2*R_Canonical_Base_1.');
             end
+            % ======================================================================
+            %> @brief Angular_Velocity function gives the angular velocity vector from Base_1 to Base_2. The given vector components can be represented in the Base_Components base.
+            %>
+            %> @param Base_1: Base object that represent the fixed frame
+            %> @param Base_2: Base object that represent the moving frame
+            %> @param Base_Components: Base object in which the components will be given.
+            % ======================================================================
             function out = Angular_Velocity(obj, Base_1, Base_2, Base_Components)
                 syms t 
                 S = transpose(obj.Change_Basis_Matrix(Base_1,Base_2));
@@ -486,6 +473,20 @@ classdef System < handle
 
         % PUBLIC
         methods(Access = public)
+            % ======================================================================
+            %> @brief Point introduction in System
+            %>
+            %> This function creates a Point object with the same inputs that the Point Class requires. This base is introduced in the System object.
+            %>
+            %>
+            %> @param Name: String that defines the name of the object
+            %> @param point_coordinates: [3 x 1] dobule or symbolic array that defines the position of the point with respect the absolute point (canonical point [0,0,0]).
+            %>
+            %> The second way of creating a point is with respect a coordinate system. A coordinate system is defined by a base and a point, and the new point is given by its position with respect to the father point with the father_base components. 
+            %> @param Name: String that defines the name of the object.
+            %> @param father_point: Father Point (String).
+            %> @param father_base: Father Base (String).
+            %> @param point_coordinates: [3 x 1] dobule or symbolic array that defines the position of the point with respect the relative coordinate system (Father_Point and Father_Base).
             function Create_New_Point(obj, Name, Coordinate_System, Coordinates)
                 %CELLFIND Find string matches in a cell array. Used to
                 %avoid having points with the same name.
@@ -599,6 +600,13 @@ classdef System < handle
         end
         % PUBLIC
         methods(Access = public)
+            % ======================================================================
+            %> @brief The Create_New_Coordinate_System function introduces a new coordinate system in the System object. This Coordinte System is given by a Point and a Base object.
+            %>
+            %> @param Name: Name given to the new coordinate system.
+            %> @param Point_Name: Point Name (String) of the Point used to create the new coordinate system.
+            %> @param Base_Name: Base Name (String) of the Base used to create the new coordinate system.
+            % ======================================================================
             function Create_New_Coordinate_System(obj, Name, Point_Name, Base_Name)
                 %CELLFIND Find string matches in a cell array. Used to
                 %avoid having Cordinate_Systems with the same name.
@@ -685,6 +693,15 @@ classdef System < handle
         end
         % PUBLIC
         methods(Access = public)
+            % ======================================================================
+            %> @brief Create_New_Rigid_Body is a function uses the methods of the class Rigid_Body to create a Rigid Body object.
+            %>
+            %> @param name: String that defines the name of the rigid body.
+            %> @param G_Point: Center of mass of the rigid body from the canonical point OG. Symbolic or double [3 x 1] array.
+            %> @param Base: Base object that defines the kinematic base linked with the rigid body.
+            %> @param Mass: Symbolic or double scalar that represents the total mass of the rigid body.
+            %> @param Intertial_Tensor: [3 x 3] symbolic or double variable that represents the inertial tensor of the rigid body. A zero [3 x 3] array represents a particle.
+            % ======================================================================
             function Create_New_Rigid_Body(obj, Name, varargin)
                 %CELLFIND Find string matches in a cell array. Used to
                 %avoid having Cordinate_Systems with the same name.
@@ -1002,6 +1019,16 @@ classdef System < handle
         end
         % PUBLIC
         methods(Access = public)
+            % ======================================================================
+            %> @brief The Create_New_Action function introduces a new action in the current system.
+            %>
+            %> @param obj: System in which to introduce a new action
+            %> @param Name: Name of the new action
+            %> @param Point: Point of application of the action. The point is given by its String Name and has to be introduced previously in the System.
+            %> @param Base: Base in which the action components are given. The Base is given by its String Name and has to be introduced previously in the System.
+            %> @param Rigid_Body: Rigid Body to which the action applies. The Rigid_Body is given by its String Name and has to be introduced previously in the System.
+            %> @param Vector: Components of the Action. The action components can me symbolic or double and they are given by 3 torque components and 3 force components. Eg: [Mx;My;Mz;Fx;Fy;Fz].
+            % ======================================================================
             function Create_New_Action(obj, Name, varargin)
                 %CELLFIND Find string matches in a cell array. Used to
                 %avoid having Cordinate_Systems with the same name.
@@ -1158,6 +1185,13 @@ classdef System < handle
         end
         % PUBLIC
         methods(Access = public)
+            % ======================================================================
+            %> @brief Create_New_Generalized_Coordinate is a function that includes in the system one generalized coordinate.
+            %>
+            %> @param obj: System object in which to include the new generalized coordinate.
+            %> @param Name: Generalized coordinate name (string).
+            %> @param Symbol: Generalized coordinate symbol (symbolic variable)
+            % ======================================================================
             function Create_New_Generalized_Coordinate(obj, Name, Symbol)
                 %CELLFIND Find string matches in a cell array. Used to
                 %avoid having Cordinate_Systems with the same name.
@@ -1175,6 +1209,7 @@ classdef System < handle
                     obj.System_Generalized_Coordinates = [obj.System_Generalized_Coordinates; {Name, Symbol}];
                 end
             end
+            
             function out = Get_Generalized_Coordinates_Info(obj, Info, varargin)
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 default_Generalized_Coordinate = "All";
@@ -1236,6 +1271,19 @@ classdef System < handle
         end
         % PUBLIC
         methods(Access = public)
+            % ======================================================================
+            %> @brief Create_New_Input is a function that introduces a new input object in the System.
+            %>
+            %> Inputs in the System are Action objects. As the library is aimed to design control studies, the System Inputs and Actions have each own table. This helps with the creation of function handles to give an easy way of introducing inputs in simulations.
+            %>
+            %> @param obj: System in which to introduce a new input
+            %> @param Name: Name of the new input
+            %> @param Point: Point of application of the input. The point is given by its String Name and has to be introduced previously in the System.
+            %> @param Base: Base in which the input components are given. The Base is given by its String Name and has to be introduced previously in the System.
+            %> @param Rigid_Body: Rigid Body to which the input is applied. The Rigid_Body is given by its String Name and has to be introduced previously in the System.
+            %> @param Vector: Components of the input. The input components can me symbolic or double and they are given by 3 torque components and 3 force components. Eg: [Mx;My;Mz;Fx;Fy;Fz].
+            %> @param External_Variables: Variables that define the inputs. If an input is a constant force of 1000 N the vector components are [0;0;0;1000;0;0] and there is no new variables added to the system. If there is a need of study a input that varies with time [0;0;0;F(t);0;0] the external variable should be added as a symbolic variable F(t). Eg: str2sym("F(t)"). 
+            % ======================================================================
             function Create_New_Input(obj, Name, varargin)
                 %CELLFIND Find string matches in a cell array. Used to
                 %avoid having Cordinate_Systems with the same name.

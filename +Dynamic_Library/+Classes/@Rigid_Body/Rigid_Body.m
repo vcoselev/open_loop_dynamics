@@ -1,11 +1,22 @@
+%> @file Rigid_Body.m
+%> @brief Rigid Body Class description
+% ======================================================================
+%> @brief Rigid Body Class for the creation of Rigid Body objects.
+% ======================================================================
 classdef Rigid_Body < handle
     %% PROPERTIES
         % PRIVATE
+        %> Public properties for Rigid Body Class
         properties(Access = public)
+            %> Name of Rigid Body. This property is a String class variable representing que name of the Rigid Body Object.
             Rigid_Body_Name
+            %> [3x1] symbolic or double array that represents the position of the center of mass from the canonical point (in the System Class this point is named "Canonical").
             G_Point_From_Canonical
+            %> Rigid Body base represented by the Base Class.
             Rigid_Body_Base
+            %> Symbolic or double scalar that represents the mass of the Rigid Body Object.
             Mass
+            %> [3x3] symbolic or double array. This array represent the inertial tensor of the Rigid Body Object.
             Inertial_Tensor
         end
         % PROTECTED

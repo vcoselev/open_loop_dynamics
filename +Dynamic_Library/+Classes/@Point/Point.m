@@ -27,6 +27,19 @@ classdef Point
 
         % PUBLIC
         methods(Access = public)
+            %> @brief Point Class Constructor
+            %> 
+            %>
+            %> Point objects can be created by two different ways. A point is created in an absolute way if the point coordinates are given with respect the canonical point.
+            %>
+            %> @param Name: String that defines the name of the object
+            %> @param point_coordinates: [3 x 1] dobule or symbolic array that defines the position of the point with respect the absolute point (canonical point [0,0,0]).
+            %>
+            %> The second way of creating a point is with respect a coordinate system. A coordinate system is defined by a base and a point, and the new point is given by its position with respect to the father point with the father_base components. 
+            %> @param Name: String that defines the name of the object.
+            %> @param father_point: Father Point object.
+            %> @param father_base: Father Base object.
+            %> @param point_coordinates: [3 x 1] dobule or symbolic array that defines the position of the point with respect the relative coordinate system (Father_Point and Father_Base).
             function obj = Point(Name, varargin)
 
                 default_father_Point = sym([0; 0; 0]);

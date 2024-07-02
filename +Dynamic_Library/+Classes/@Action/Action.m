@@ -29,6 +29,15 @@ classdef Action < handle
 
         % PUBLIC
         methods(Access = public)
+            % ======================================================================
+            %> @brief Action Class constructor
+            %>
+            %> @param obj: System in which to introduce a new action
+            %> @param Name: Name of the new action
+            %> @param Point: Point (object) of application of the action.
+            %> @param Base: Base (object) in which the action components are given.
+            %> @param Vector: Components of the Action. The action components can me symbolic or double and they are given by 3 torque components and 3 force components. Eg: [Mx;My;Mz;Fx;Fy;Fz].
+            % ======================================================================
             function obj = Action(Name, varargin)
                 default_Action_Point = Dynamic_Library.Classes.Point("Canonical");
                 default_Action_Base = Dynamic_Library.Classes.Base( ...
