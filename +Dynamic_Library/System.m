@@ -226,7 +226,13 @@ classdef System < handle
                     tau_tk_xk = tau_tk_xk+ Aux_Tau;
                 end
             end
-            
+                % ======================================================================
+                %> @brief The function Get_input_tk_xk calculates the value of the generalized inputs (generalized forces of the inputs) in a \f$\left[x_k, x_{external_k}\right]^T\f$ configuration at time \f$t_k\f$. 
+                %>
+                %> @param obj System
+                %> @param tk time \f$t_k\f$
+                %> @param xk configuration \f$x_k\f$
+                % ======================================================================
             function input_tk_xk = Get_input_tk_xk(obj,tk,xk,external_vars_k)
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 syms t
@@ -806,6 +812,10 @@ classdef System < handle
                 end
                 
             end
+            %> @brief The Get_Virtual_Velocity_q_Component function provides the \f$ \left[ \mathbf{c_k^i, b_k^i}\right]^T \f$ array given by the Get_Info function of the Rigid_Body class.
+            %> 
+            %> @param Name Name of the rigid body.
+            %> @param q Generalized coordinate
             function out = Get_Virtual_Velocity_q_Component(obj,Name,q)
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 Rigid_Body_Name = Name;
@@ -814,6 +824,12 @@ classdef System < handle
                 Rigid_Body_Object = Rigid_Body_Cell{4};
                 out = Rigid_Body_Object.Get_Info("Virtual_Velocities",'Generalized_Coordinate',q);
             end
+            %> @brief The Get_Virtual_Velocity_q_uv_handle function provides the \f$ \left[ \mathbf{c_k^i, b_k^i}\right]^T \f$ array given by the Get_Info function of the Rigid_Body class in the variables \f$ \left[\mathbf{u}, \mathbf{v} \right]^T \f$ of the order reduction
+            %> 
+            %>
+            %> This function saves for each of the generalized coordinates in the system a function in the folder fun_handles in the work directory.
+            %>
+            %> @param Name Name of the rigid body.
             function [virtual_velocity_uv, vars] = Get_Virtual_Velocity_q_uv_handle(obj,Name)
                 syms t
                 q = obj.q_variables;
@@ -829,16 +845,21 @@ classdef System < handle
                     % virtual_velocity_uv{i,3} = odeFunction(vv_uv,[v;u]);
                     virtual_velocity_uv{i,3} = odeFunction(vv_uv,[v;u], ...
                                                 "File", "fun_handles/Virtual_Velocity_Components_uv_"+Name+"_"+string(i), ...
-                                                "Comments","Virtual Velocity Components: Rigid Body: "+Name+" "+ string(q(i)));
+                                                "Comments","Virtual Velocity Components: Rigid Body: "+Name+ " "+ string(q(i)));
                     virtual_velocity_uv{i,4} = dt_vv;
                     % virtual_velocity_uv{i,5} = odeFunction(d_vv_uv,[v;u]);
                     virtual_velocity_uv{i,5} = odeFunction(d_vv_uv,[v;u], ...
                                                 "File", "fun_handles/d_Virtual_Velocity_Components_uv_"+Name+"_"+string(i), ...
-                                                "Comments","Virtual Velocity Components: Rigid Body: "+Name+" "+ string(q(i)));
+                                                "Comments","Virtual Velocity Components: Rigid Body: "+Name+ " "+ string(q(i)));
                     vars = [v;u];
                 end
             end
-            function [EOM_Cell, vars] = Get_A_Matrix_Handle(obj, Name)
+            %> @brief The function Get_A_Matrix_Handle creates a \f$ \left[ 1 \times 5\right]\f$ cell matrix for one rigid body in the system and helps the calculation of the \f$ \left[ A \right]\f$ values. The cell arrays columns are: name of the rigid body (string), mass of the rigid body (double number), inertial tensor of the rigid body (\f$ \left[ 3 \times 3\right]\f$ double array), \f$ \left[ n \times n\right]\f$ cell array used to get the \f$ \left[ A \right]\f$ matrix and a \f$ \left[ n \times n\right]\f$ cell array used to get the \f$ \dot{\left[ A \right]}\f$ matrix. The value of \f$ n\f$ is the number of generalized coordinates in the system (the degrees of freedom in a holonomic system).
+            %>
+            %> @param Name Name of the rigid body (string)
+            %>
+            %> Each of the components of the \f$ \left[ n \times n\right]\f$ cell array contains the function handles to get the numeric values of the \f$ \left[ A \right]\f$ and \f$ \dot{\left[ A \right]} \f$ matrices. For example, the first component (1,1) of the \f$ \left[ A \right]\f$ matrix of a rigid body is gonna be \f$ -m \mathbf{b_1}^T \mathbf{b_1} - \left[ \mathbf{I} \mathbf{c_1} \right]^T \mathbf{c_1} \f$. In this expression \f$ m\f$ is the mass of the rigid body, \f$ \mathbf{I}\f$ is the inertial tensor of the rigid body and \f$ \mathbf{b_1}\f$ and \f$  \mathbf{c_1}\f$ are the virtual displacements of the rigid body with respect to the first generalized coordinate. The \f$ \left[ n \times n\right]\f$ cell array gives the handles to calculate the virtual displacements \f$ \mathbf{b_1}\f$ and \f$ \mathbf{c_1}\f$ and in which order the product should be done. With this handles, the mass, and the inertial tensor, the numerical (1,1) component of the \f$ \left[ A \right]\f$ matrix can be calculated. Analogous methodology is used for the other components and also for the \f$ \dot{\left[ A \right]} \f$ matrix aswell.
+            function [Inertial_EOM_Cell, vars] = Get_A_Matrix_Handle(obj, Name)
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 Rigid_Body_Name = Name;
                 find_match_Rigid_Body = cellfun(cellfind(Rigid_Body_Name),obj.System_Rigid_Bodies(:,1));
@@ -858,7 +879,7 @@ classdef System < handle
                         d_A_Matrix_Handle{i,j} = {d_virtual_velocity_uv_handles{i};d_virtual_velocity_uv_handles{j}};
                     end
                 end
-                EOM_Cell = {Name,Mass,I,A_Matrix_Handle,d_A_Matrix_Handle};
+                Inertial_EOM_Cell = {Name,Mass,I,A_Matrix_Handle,d_A_Matrix_Handle};
             end
             function [system_virtual_velocity_uv, vars] = Get_System_Virtual_Velocity_q_uv_handle(obj)
                 Rigid_Bodies = obj.System_Rigid_Bodies(:,1);
@@ -871,17 +892,27 @@ classdef System < handle
                     system_virtual_velocity_uv{i-1,2} = Virtual_Velocity_Component_Handle;
                 end
             end
-            function [EOM_Cell, vars] = Get_System_A_Matrix_Handles(obj)
+            %> @brief The function Get_System_A_Matrix_Handles creates a \f$ \left[ n_{RB} \times 2\right]\f$ cell matrix, where \f$ n_{RB}\f$ is the number of rigid bodies in the system. This cell arrays give the function handles and parameters to calculate the \f$ \left[ A \right]\f$ and \f$ \dot{\left[ A \right]}\f$ matrices. This matrices represent the contribution of the inertial forces to the EOM.
+            %>
+            %> @param obj System
+            function [Inertial_EOM_Cell, vars] = Get_System_A_Matrix_Handles(obj)
                 Rigid_Bodies = obj.System_Rigid_Bodies(:,1);
                 n = length(Rigid_Bodies);
                 system_virtual_velocity_uv = {};
                 for i = 2:n
                     Name = Rigid_Bodies{i};
                     A_Matrix_Handle = obj.Get_A_Matrix_Handle(Name);
-                    EOM_Cell{i-1,1} = Name;
-                    EOM_Cell{i-1,2} = A_Matrix_Handle;
+                    Inertial_EOM_Cell{i-1,1} = Name;
+                    Inertial_EOM_Cell{i-1,2} = A_Matrix_Handle;
                 end
             end
+            %> @brief The function Get_Transformation_Matrix_Handle gives the function handle for the calculation of the Transformation Matrix (T) of one of the rigid bodies in the system.
+            %>
+            %> This transformation matrix is given in the reduced order variables \f$ \left[\mathbf{u}, \mathbf{v} \right]^T \f$.
+            %>
+            %> @param Name
+            %> @retval T_uv Symbolic Transformation Matrix (T).
+            %> @retval T_fun_handle Function handle of the Transformation Matrix (T).
             function [T_uv,T_fun_handle] = Get_Transformation_Matrix_Handle(obj,Name)
                 Rigid_Body = obj.Get_Rigid_Body_Info("System_Rigid_Bodies",'rigid_body',Name);
                 Point_Name = Rigid_Body{2};
@@ -899,6 +930,9 @@ classdef System < handle
                 [T_uv,u,v] = obj.order_reduction(T,q,d_q);
                 T_fun_handle = odeFunction(T_uv,[v;u]);
             end
+            %> @brief The function Get_System_Transformation_Matrix_Handle returns a \f$ \left[ n_{RB} \times 3\right]\f$ array of cells that contains the Symbolic matrices and function handles of all of the rigid bodies transformation matrices in the system, where \f$ n_{RB} \f$ is the number of rigid bodies in the system.
+            %>
+            %> The first column of the cells represent the name (string) of each rigid body, the second contains the Symbolic Transformation Matrix and the third one keeps the function handle for the numerical calculation of the transformation matrix.
             function T_Cells = Get_System_Transformation_Matrix_Handle(obj)
                 Rigid_Bodies = obj.System_Rigid_Bodies(:,1);
                 n = length(Rigid_Bodies);
@@ -1137,7 +1171,6 @@ classdef System < handle
                 %> @brief The Get_Generalized_Action function gives the [N x 1] array that represents the contribution of an Action to the EOM. Generally this components are known as generalized forces.
                 %> 
                 %> @param Name Name of the Action
-                %Get Rigid Body Object
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 find_match = cellfun(cellfind(Name),obj.System_Actions(:,1));
                 Action_Cell = obj.System_Actions([find(find_match,1)],:);
@@ -1157,6 +1190,9 @@ classdef System < handle
                 end
                 out = Generalized_Action;
             end
+            %> @brief The Get_System_Generalized_Actions function gives the [N x 1] array that represents the contribution of all Actions of the System to the EOM. Generally this components are known as generalized forces.
+            %> 
+            %> @param obj System
             function out = Get_System_Generalized_Actions(obj)
                 Actions = obj.System_Actions(:,1);
                 n = length(Actions);
@@ -1395,7 +1431,6 @@ classdef System < handle
                 %> @brief The Get_Generalized_Input function gives the [N x 1] array that represents the contribution of an Input to the EOM. Generally this components are known as generalized forces.
                 %> 
                 %> @param Name Name of the Input
-                %Get Rigid Body Object
                 cellfind = @(string)(@(cell_contents)(strcmp(string,cell_contents)));
                 find_match = cellfun(cellfind(Name),obj.System_Inputs(:,1));
                 Input_Cell = obj.System_Inputs([find(find_match,1)],:);
@@ -1415,6 +1450,9 @@ classdef System < handle
                 end
                 out = Generalized_Input;
             end
+            %> @brief The Get_System_Generalized_Inputs function gives the [N x 1] array that represents the contribution of all Inputs of the system to the EOM. Generally this components are known as generalized forces.
+            %> 
+            %> @param obj System
             function out = Get_System_Generalized_Inputs(obj)
                 Inputs = obj.System_Inputs(:,1);
                 n = length(Inputs);

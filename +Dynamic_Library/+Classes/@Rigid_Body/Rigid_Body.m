@@ -78,6 +78,11 @@ classdef Rigid_Body < handle
                 obj.Inertial_Tensor = p.Results.Intertial_Tensor;
             end
 
+            %> @brief First Case
+            %>
+            %>
+            %>
+            %> @param Virtual_Velocities In a holonomic system the real and virtual velocities can be expressed in terms of the generalized coordinates of the system. This equations for the lineal and angular velocity are given by  \f$ \mathbf{v_i} = \sum_{k}^{} \frac{\partial \mathbf{v_i}}{\partial \dot{q_k}} \dot{q_k} \f$ and \f$ \mathbf{\Omega_i} = \sum_{k}^{} \frac{\partial \mathbf{\Omega_i}}{\partial \dot{q_k}} \dot{q_k} \f$, where \f$ i\f$ represents the rigid body and \f$ k\f$ the generalized coordinates. This equations  can be rewritten as \f$ \mathbf{v_i} = \sum_{k}^{} \mathbf{b^i_k} \dot{q_k} \f$ and \f$ \mathbf{\Omega_i} = \sum_{k}^{} \mathbf{c^i_k} \dot{q_k} \f$. The option Virtual_Velocities in the Get_Info function gives the symbolic array \f$ \left[ \mathbf{c_k^i, b_k^i}\right]^T \f$ for the specific rigid body object \f$ ki\f$ and a generalized coordinate \f$ q_k\f$.
             function out = Get_Info(obj, Info, varargin)
             %GET_INFO Get properties of an "Base" object.
                 issym = @(x) isequal(class(x),"sym");
